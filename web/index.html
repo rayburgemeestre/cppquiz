@@ -1,0 +1,19 @@
+<html lang="">
+<head>
+    <script type="text/javascript" src="api.js"></script>
+    <script>
+        var api = new API('participant', function (status) {
+            console.log(status);
+        }, function (message) {
+            document.getElementById('test').innerText = message['msg'];
+        }, function () {
+            api.send({'msg': 'hello'});
+        }, function () {});
+    </script>
+    <title>C++ Quiz</title>
+</head>
+<body>
+<div id="test">
+</div>
+</body>
+</html>
