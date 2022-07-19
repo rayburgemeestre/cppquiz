@@ -1,6 +1,7 @@
 class API {
-    constructor(endpoint, on_status_change, on_message, on_connected, on_disconnected) {
+    constructor(endpoint, unique_id, on_status_change, on_message, on_connected, on_disconnected) {
         this.endpoint = endpoint;
+        this.unique_id = unique_id;
         this.on_status_change = on_status_change;
         this.on_message = on_message;
         this.on_connected = on_connected;
@@ -8,11 +9,6 @@ class API {
         this.ws = false;
         this.retry = false;
 
-        if (!localStorage.getItem('client-data')) {
-            throw 'client-data could not be read from local storage.';
-        }
-
-        this.client_data = JSON.parse(localStorage.getItem('client-data'));
         this.connect();
     }
 
@@ -20,9 +16,9 @@ class API {
         this.on_status_change('connecting');
         let protocol = document.location.protocol.replace('http', 'ws');
         if (document.location.href.indexOf('localhost')) {
-            this.ws = new WebSocket(protocol + '//' + document.location.host.replace(':8080', ':18080') + '/' + this.endpoint, [this.client_data['ID']]);
+            this.ws = new WebSocket(protocol + '//' + document.location.host.replace(':8080', ':18080') + '/' + this.endpoint);
         } else {
-            this.ws = new WebSocket(protocol + '//' + document.location.host + '/' + this.endpoint, [this.client_data['ID']]);
+            this.ws = new WebSocket(protocol + '//' + document.location.host + '/' + this.endpoint);
         }
         this.ws.onopen = function () {
             clearTimeout(this.retry);
@@ -43,6 +39,13 @@ class API {
     }
 
     send(msg) {
+        msg['unique_id'] = this.unique_id;
         this.ws.send(JSON.stringify(msg));
     }
+}
+
+function uuidv4() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
 }

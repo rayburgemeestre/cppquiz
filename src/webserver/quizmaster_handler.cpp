@@ -24,10 +24,21 @@ void quizmaster_handler::onDisconnect(seasocks::WebSocket *con) {
 void quizmaster_handler::onData(seasocks::WebSocket *con, const char *data) {
   std::string input(data);
   try {
+    logger(DEBUG) << "quizmaster REQ " << input << std::endl;
     auto json = nlohmann::json::parse(input);
     if (json["msg"] == "hello") {
+      if (quizmaster_uuid_.empty()) {
+        quizmaster_uuid_ = json["unique_id"];
+      }
       nlohmann::json response;
-      response["msg"] = "Hi there Mr. Admin!";
+      if (quizmaster_uuid_ == json["unique_id"]) {
+        response["msg"] = "hello";
+        response["value"] = "Hi there Mr. Admin!";
+      } else {
+        response["msg"] = "hello";
+        response["value"] = "Sorry, there is already a different quizmaster!";
+      }
+      logger(DEBUG) << "quizmaster REP " << response.dump() << std::endl;
       con->send(response.dump());
     }
   } catch (const nlohmann::json::exception &e) {

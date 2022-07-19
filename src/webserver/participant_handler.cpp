@@ -5,6 +5,7 @@
  */
 
 #include "webserver/participant_handler.h"
+#include "fmt/core.h"
 #include "nlohmann/json.hpp"
 #include "util/logger.h"
 #include "webserver.h"
@@ -23,11 +24,20 @@ void participant_handler::onDisconnect(seasocks::WebSocket *con) {
 
 void participant_handler::onData(seasocks::WebSocket *con, const char *data) {
   std::string input(data);
+  logger(DEBUG) << "quizmaster REQ " << input << std::endl;
   try {
-    auto json = nlohmann::json::parse(input);
-    if (json["msg"] == "hello") {
+    auto client_msg = nlohmann::json::parse(input);
+    if (client_msg["msg"] == "hello") {
       nlohmann::json response;
-      response["msg"] = "Hi there!";
+      response["msg"] = "hello";
+      response["value"] = "Hi there!";
+      logger(DEBUG) << "quizmaster REP " << response.dump() << std::endl;
+      con->send(response.dump());
+    } else if (client_msg["msg"] == "set_nickname") {
+      nlohmann::json response;
+      response["msg"] = "set_nickname";
+      response["value"] = fmt::format("Nice to meet you {}!", client_msg["nickname"]);
+      logger(DEBUG) << "quizmaster REP " << response.dump() << std::endl;
       con->send(response.dump());
     }
   } catch (const nlohmann::json::exception &e) {

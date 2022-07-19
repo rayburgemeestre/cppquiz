@@ -9,6 +9,7 @@
 
 struct quizmaster_handler : seasocks::WebSocket::Handler {
   std::set<seasocks::WebSocket *> connections_;
+  std::string quizmaster_uuid_;
 
   quizmaster_handler();
 

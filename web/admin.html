@@ -1,19 +1,54 @@
 <html lang="">
 <head>
     <script type="text/javascript" src="api.js"></script>
+    <script src="https://unpkg.com/vue@3"></script>
     <script>
-        var api = new API('quizmaster', function (status) {
-            console.log(status);
-        }, function (message) {
-            document.getElementById('test').innerText = message['msg'];
-        }, function () {
-            api.send({'msg': 'hello'});
-        }, function () {});
     </script>
-    <title>C++ Quiz Admin</title>
+    <title>C++ Quiz</title>
 </head>
 <body>
-<div id="test">
+
+<div id="app">
+    Server state: {{ server_state }} <br/>
+    UUID: {{ uuid }} <br/>
+    Message: {{ message }} <br/>
 </div>
+
+<script>
+    const { createApp, ref } = Vue
+
+    if (!localStorage.getItem('unique_id'))
+        localStorage.setItem('unique_id', uuidv4());
+    unique_id = localStorage.getItem('unique_id');
+
+    if (!localStorage.getItem('nickname'))
+        localStorage.setItem('nickname', 'Anonymous Bastard');
+    nickname = localStorage.getItem('nickname');
+
+    let api = null;
+    let app = createApp({
+        data() {
+            return {
+                server_state: 'initializing',
+                message: '',
+                uuid: unique_id
+            }
+        },
+        watch: {
+        }
+    }).mount('#app')
+
+    api = new API('quizmaster', unique_id, function (status) {
+        app.$data.server_state = status;
+    }, function (message) {
+        console.log(message);
+        if (message['msg'] === 'hello') {
+            app.$data.message = message['value'];
+        }
+    }, function () {
+        api.send({'msg': 'hello'});
+    }, function () {});
+</script>
+
 </body>
 </html>
