@@ -15,6 +15,7 @@
 
 struct participant_handler;
 struct quizmaster_handler;
+class quiz_runner;
 
 struct DataHandler : seasocks::CrackedUriPageHandler {
   virtual std::shared_ptr<seasocks::Response> handle(const seasocks::CrackedUri & /*uri*/,
@@ -24,6 +25,7 @@ struct DataHandler : seasocks::CrackedUriPageHandler {
 class webserver {
 private:
   std::shared_ptr<seasocks::Server> server_ = nullptr;
+  std::shared_ptr<quiz_runner> quiz_runner_ = nullptr;
   std::shared_ptr<participant_handler> participant_handler_ = nullptr;
   std::shared_ptr<quizmaster_handler> quizmaster_handler_ = nullptr;
 

@@ -12,6 +12,14 @@
     Server state: {{ server_state }} <br/>
     UUID: {{ uuid }} <br/>
     Message: {{ message }} <br/>
+    <button @click="start_quiz">Start quiz</button>
+
+    <h2>Participants</h2>
+    <ul>
+        <li v-for="participant in participants">
+            {{ participant.nickname }} ({{ participant.unique_id }}, {{ participant.connected }})
+        </li>
+    </ul>
 </div>
 
 <script>
@@ -31,8 +39,14 @@
             return {
                 server_state: 'initializing',
                 message: '',
-                uuid: unique_id
+                uuid: unique_id,
+                participants: [],
             }
+        },
+        methods: {
+          start_quiz() {
+              console.log('TODO');
+          }
         },
         watch: {
         }
@@ -44,6 +58,9 @@
         console.log(message);
         if (message['msg'] === 'hello') {
             app.$data.message = message['value'];
+        }
+        else if (message['msg'] === 'participants') {
+            app.$data.participants = message['value'];
         }
     }, function () {
         api.send({'msg': 'hello'});

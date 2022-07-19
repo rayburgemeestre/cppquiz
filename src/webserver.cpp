@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <memory>
 #include "nlohmann/json.hpp"
+#include "quiz_runner.h"
 #include "seasocks/Logger.h"
 #include "util/logger.h"
 #include "webserver/participant_handler.h"
@@ -51,8 +52,19 @@ public:
 
 webserver::webserver()
     : server_(std::make_shared<seasocks::Server>(std::make_shared<MyLogger>(MyLogger::Level::Info))),
-      participant_handler_(std::make_shared<participant_handler>()),
-      quizmaster_handler_(std::make_shared<quizmaster_handler>()) {
+      quiz_runner_(
+          std::make_shared<quiz_runner>(quiz("The Big C++ Quiz",
+                                             {
+                                                 question{"What is the answer to life, the universe, and everything?",
+                                                          {
+                                                              answer{"40", false},
+                                                              answer{"41", false},
+                                                              answer{"42", true},
+                                                              answer{"43", false},
+                                                          }},
+                                             }))),
+      participant_handler_(std::make_shared<participant_handler>(quiz_runner_)),
+      quizmaster_handler_(std::make_shared<quizmaster_handler>(quiz_runner_)) {
   auto root = std::make_shared<seasocks::RootPageHandler>();
   root->add(std::make_shared<seasocks::PathHandler>("data", std::make_shared<DataHandler>()));
   server_->addPageHandler(root);

@@ -7,13 +7,20 @@
 
 #include "seasocks/Server.h"
 
+class quiz_runner;
+
 struct quizmaster_handler : seasocks::WebSocket::Handler {
   std::set<seasocks::WebSocket *> connections_;
+  std::set<seasocks::WebSocket *> confirmed_connections_;
+  std::shared_ptr<quiz_runner> quiz_runner_ = nullptr;
   std::string quizmaster_uuid_;
 
-  quizmaster_handler();
+  quizmaster_handler(std::shared_ptr<quiz_runner> quiz_runner);
 
   void onConnect(seasocks::WebSocket *con) override;
   void onDisconnect(seasocks::WebSocket *con) override;
   void onData(seasocks::WebSocket *con, const char *data) override;
+
+private:
+  void send_participants();
 };
