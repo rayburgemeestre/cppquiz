@@ -28,12 +28,16 @@
 
     </div>
 
+
     <div v-if="quiz_started">
         <div v-if="current_question">
             <h2>{{ current_question.question }}</h2>
 
+            <h2 v-if="countdown">Seconds remaining: {{ countdown }}</h2>
+
             <div v-for="(answer, index) in current_question.answers">
-                <button v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                <span><strong>{{ answer }}</strong> </span>
+                <span v-if="is_answer_correct(current_question.question_id, index)"> == CORRECT</span>
                 <br/>
                 <br/>
             </div>
@@ -73,6 +77,8 @@
     nickname = localStorage.getItem('nickname');
 
     let api = null;
+    let countdown = null;
+
     let app = createApp({
         data() {
             return {
@@ -89,6 +95,7 @@
                 solutions: {},
                 question_state: 0,
                 answering_time: false,
+                countdown: '',
             }
         },
         methods: {
@@ -110,6 +117,17 @@
             start_question() {
                 api.send({'msg': 'start_question'});
             },
+            is_answer_correct(question_id, answer_id) {
+                try {
+                    for (let answer of app.$data.solutions) {
+                        if (answer["question_id"] == question_id &&
+                            answer["answer_id"] == answer_id) {
+                            return true;
+                        }
+                    }
+                } catch (e) {}
+                return false;
+            }
         },
         computed: {
             leaderboard() {
@@ -123,17 +141,17 @@
                             question_solutions_map[sol['question_id']] = new Set();
                         question_solutions_map[sol['question_id']].add(sol['answer_id']);
                     }
-                } catch (e) { return []; }
 
-                for (let answer of this.$data.answers) {
-                    if (!(answer['participant_id'] in participant_scores)) {
-                        participant_scores[answer['participant_id']] = 0;
+                    for (let answer of this.$data.answers) {
+                        if (!(answer['participant_id'] in participant_scores)) {
+                            participant_scores[answer['participant_id']] = 0;
+                        }
+                        if (answer['question_id'] in question_solutions_map &&
+                            question_solutions_map[answer['question_id']].has(answer['answer'])) {
+                            participant_scores[answer['participant_id']]++;
+                        }
                     }
-                    if (answer['question_id'] in question_solutions_map &&
-                    question_solutions_map[answer['question_id']].has(answer['answer'])) {
-                        participant_scores[answer['participant_id']]++;
-                    }
-                }
+                } catch (e) { return []; }
 
                 let participant_uuid_to_nickname = {};
                 for (let participant of this.$data.participants) {
@@ -194,10 +212,23 @@
             app.$data.solutions = message['value'];
         }
         else if (message['msg'] === 'set_answering_time') {
+            console.log(message);
             app.$data.answering_time = message['value'];
             if (!app.$data.answering_time) {
                 app.$data.question_state = 0;
-                app.$data.current_question = {};
+            } else {
+                let current_count = 10;
+                let counter = function () {
+                    app.$data.countdown = '' + current_count;
+                    if (current_count == 0) {
+                        app.$data.countdown = '';
+                        return;
+                    }
+                    if (countdown) clearInterval(countdown);
+                    countdown = setTimeout(counter, 1000);
+                    current_count--;
+                };
+                counter();
             }
         }
     }, function () {

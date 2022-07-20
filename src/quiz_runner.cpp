@@ -129,6 +129,7 @@ void quiz_runner::start_question() {
     question_state_ = 0;
     next_question_++;
     send_correct_answers_to_quizmaster();
+    send_correct_answer_to_participants();
   });
 }
 
@@ -193,6 +194,26 @@ void quiz_runner::send_correct_answers_to_quizmaster() {
   }
   for (auto& callback : quizmaster_callbacks_) {
     callback(nlohmann::json{{"msg", "solutions"}, {"value", ret}});
+  }
+}
+
+void quiz_runner::send_correct_answer_to_participants() {
+  nlohmann::json ret;
+  size_t index = 0;
+  for (const auto& question : quiz_.questions()) {
+    if (index == current_question_ && current_question_ != std::numeric_limits<size_t>::max()) {
+      size_t answer_index = 0;
+      for (const auto& answer : question.answers_with_solution()) {
+        if (answer.is_correct()) {
+          ret.push_back(nlohmann::json{{"question_id", index}, {"answer_id", answer_index}});
+        }
+        answer_index++;
+      }
+    }
+    index++;
+  }
+  for (auto& callback : participant_callbacks_) {
+    callback(nlohmann::json{{"msg", "solution"}, {"value", ret}});
   }
 }
 

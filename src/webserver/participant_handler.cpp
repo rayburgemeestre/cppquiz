@@ -17,7 +17,8 @@ participant_handler::participant_handler(std::shared_ptr<seasocks::Server> serve
                                          std::shared_ptr<quiz_runner> quiz_runner)
     : server_(server), quiz_runner_(quiz_runner) {
   quiz_runner_->add_participant_callback([&](nlohmann::json msg) {
-    if (msg["msg"] == "start_quiz" || msg["msg"] == "set_question" || msg["msg"] == "set_answering_time") {
+    if (msg["msg"] == "start_quiz" || msg["msg"] == "set_question" || msg["msg"] == "set_answering_time" ||
+        msg["msg"] == "solution") {
       for (auto &con : connections_) {
         server_->execute([=]() {
           con->send(msg.dump());

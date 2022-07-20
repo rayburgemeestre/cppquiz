@@ -31,10 +31,13 @@
             You can change your mind, until time is up. <br/>
             <br/>
 
+            <h2 v-if="countdown">Seconds remaining: {{ countdown }}</h2>
+
             <div v-for="(answer, index) in current_question.answers">
                 <button v-if="answering_time" v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
                 <span v-if="!answering_time"><strong>{{ answer }}</strong></span>
                 <span v-if="current_question.quiz_id in local_answers && current_question.question_id in local_answers[current_question.quiz_id] && local_answers[current_question.quiz_id][current_question.question_id] === index">You have chosen this option!</span>
+                <span v-if="is_answer_correct(current_question.question_id, index)"> == CORRECT</span>
                 <br/>
                 <br/>
             </div>
@@ -57,6 +60,8 @@
         localStorage.setItem('answers3', "{}");
     answers = JSON.parse(localStorage.getItem('answers3'));
 
+    let countdown = null;
+
     let api = null;
     let app = createApp({
         data() {
@@ -69,6 +74,8 @@
                 current_question: {},
                 local_answers: answers,
                 answering_time: false,
+                countdown: '',
+                solutions: {},
             }
         },
         watch: {
@@ -90,6 +97,17 @@
             },
             clear_local_storage() {
                 localStorage.setItem('answers3', "{}");
+            },
+            is_answer_correct(question_id, answer_id) {
+                try {
+                    for (let answer of app.$data.solutions) {
+                        if (answer["question_id"] == question_id &&
+                            answer["answer_id"] == answer_id) {
+                            return true;
+                        }
+                    }
+                } catch (e) {}
+                return false;
             }
         }
     }).mount('#app')
@@ -120,8 +138,23 @@
             app.$data.answering_time = message["value"];
             if (!app.$data.answering_time) {
                 app.$data.question_state = 0;
-                app.$data.current_question = {};
+            } else {
+                let current_count = 10;
+                let counter = function () {
+                    app.$data.countdown = '' + current_count;
+                    if (current_count == 0) {
+                        app.$data.countdown = '';
+                        return;
+                    }
+                    if (countdown) clearInterval(countdown);
+                    countdown = setTimeout(counter, 1000);
+                    current_count--;
+                };
+                counter();
             }
+        }
+        else if (message['msg'] === 'solution') {
+            app.$data.solutions = message["value"];
         }
     }, function () {
         api.send({'msg': 'hello'});

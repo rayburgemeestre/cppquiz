@@ -49,6 +49,7 @@ public:
   void send_participants_to_quizmaster();
   void send_answers_to_quizmaster();
   void send_correct_answers_to_quizmaster();
+  void send_correct_answer_to_participants();
 
   bool quiz_started() const;
   const std::string& quiz_id() const;
