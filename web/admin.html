@@ -23,10 +23,21 @@
             </h1>
             <p class="subtitle">
                 Welcome to the <strong>Dutch C++ Meetup</strong>!
-            <div class="tags has-addons">
-                <span class="tag is-dark">server state</span>
-                <span class="tag is-info">{{ server_state }}</span>
-            </div>
+
+                <div class="field is-grouped is-grouped-multiline">
+                    <div class="control">
+                        <div class="tags has-addons">
+                            <span class="tag is-dark">server state</span>
+                            <span class="tag is-info">{{ server_state }}</span>
+                        </div>
+                    </div>
+                    <div class="control">
+                        <div class="tags has-addons">
+                            <span class="tag is-dark">github.com/</span>
+                            <span class="tag is-warning">rayburgemeestre/cppquiz</span>
+                        </div>
+                    </div>
+                </div>
             </p>
             <p class="block">
                 <button class="button" @click="start_quiz">Start quiz</button>
@@ -36,6 +47,7 @@
                 <tr>
                     <th>Participant</th>
                     <th>UUID</th>
+                    <th>CTT</th>
                     <th>state</th>
                 </tr>
                 </thead>
@@ -43,6 +55,7 @@
                 <tr v-for="participant in participants">
                     <td>{{ participant.nickname }}</td>
                     <td><code class="is-small">{{ participant.unique_id }}</code></td>
+                    <td><code class="is-small">{{ participant.think_time }}</code></td>
                     <td><code class="is-small">{{ participant.connected }}</code></td>
                 </tr>
                 </tbody>

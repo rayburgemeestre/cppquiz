@@ -92,6 +92,19 @@
         localStorage.setItem('answers3', "{}");
     answers = JSON.parse(localStorage.getItem('answers3'));
 
+    function fix_answers(app) {
+        try {
+            new_answers = [];
+            for (let answer of app.$data.current_question.answers) {
+                console.log('check', answer);
+                if (answer[1] == ')') {
+                    new_answers.push("" + answer[0]);
+                }
+            }
+            app.$data.current_question.answers = new_answers;
+        } catch (e) {}
+    }
+
     let countdown = null;
 
     let api = null;
@@ -154,6 +167,7 @@
             app.$data.message = message['value'] + "!!!";
             app.$data.quiz_started = message['quiz_started'];
             app.$data.current_question = message['current_question'];
+            fix_answers(app);
             app.$data.answering_time = message['answering_time'];
             // send nickname in case user updated it during a disconnected state
             api.send({'msg': 'set_nickname', 'nickname': app.$data.nickname});
@@ -168,6 +182,7 @@
         }
         else if (message['msg'] === 'set_question') {
             app.$data.current_question = message["value"];
+            fix_answers(app);
         }
         else if (message['msg'] === 'set_answering_time') {
             app.$data.answering_time = message["value"];
