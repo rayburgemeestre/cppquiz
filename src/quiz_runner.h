@@ -18,16 +18,18 @@ private:
   quiz quiz_;
   size_t current_question_ = std::numeric_limits<size_t>::max();
   size_t next_question_ = std::numeric_limits<size_t>::max();
-  int question_state_ = 0;
+  size_t question_state_ = 0;
   bool answering_time_ = false;
   std::map<std::string, participant> participants_;
   std::map<std::string, std::vector<std::tuple<std::string, int, int>>> participant_answers;
+  std::map<std::string, std::map<int, double>> participant_think_times_;
 
   std::vector<std::function<void(nlohmann::json)>> participant_callbacks_;
   std::vector<std::function<void(nlohmann::json)>> quizmaster_callbacks_;
 
   bool quiz_started_ = false;
   delayed_executor stop_executor;
+  std::chrono::time_point<std::chrono::high_resolution_clock> question_start_;
 
 public:
   quiz_runner(quiz the_quiz);
@@ -48,6 +50,7 @@ public:
 
   void send_participants_to_quizmaster();
   void send_answers_to_quizmaster();
+  void send_think_times_to_quizmaster();
   void send_correct_answers_to_quizmaster();
   void send_correct_answer_to_participants();
 

@@ -24,7 +24,7 @@ quizmaster_handler::quizmaster_handler(std::shared_ptr<seasocks::Server> server,
       }
       quiz_runner_->send_participants_to_quizmaster();
     } else if (msg["msg"] == "set_question" || msg["msg"] == "answers_updated" || msg["msg"] == "participants" ||
-               msg["msg"] == "solutions" || msg["msg"] == "set_answering_time") {
+               msg["msg"] == "solutions" || msg["msg"] == "set_answering_time" || msg["msg"] == "think_times") {
       for (auto &con : confirmed_connections_) {
         server_->execute([=]() {
           con->send(msg.dump());

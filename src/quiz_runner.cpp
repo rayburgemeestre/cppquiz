@@ -109,7 +109,7 @@ void quiz_runner::expand_question() {
 
 void quiz_runner::start_question() {
   answering_time_ = true;
-  const auto send_answering_time = [=](bool value) {
+  const auto send_answering_time = [=, this](bool value) {
     for (auto& callback : participant_callbacks_) {
       callback(nlohmann::json{
           {"msg", "set_answering_time"},
@@ -123,6 +123,8 @@ void quiz_runner::start_question() {
       });
     }
   };
+  question_start_ = std::chrono::high_resolution_clock::now();
+
   send_answering_time(true);
   stop_executor.run([=, this]() {
     send_answering_time(false);
@@ -134,16 +136,26 @@ void quiz_runner::start_question() {
 }
 
 void quiz_runner::set_answers(std::string participant_id, nlohmann::json answers) {
+  std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::milli> millisecs = current_time - question_start_;
+  double think_time = std::min(10000., millisecs.count());
+
   participant_answers[participant_id].clear();
   for (const auto& item : answers.items()) {
     for (const auto& item2 : item.value().items()) {
       std::string quiz_id = item.key();
-      int question_id = std::stoi(item2.key());
-      int answer = item2.value().get<int>();
+      size_t question_id = std::stoi(item2.key());
+      size_t answer = item2.value().get<int>();
       participant_answers[participant_id].emplace_back(quiz_id, question_id, answer);
+
+      if (quiz_id == quiz_id_ && quiz_.get_question(question_id).is_answer_correct(answer) &&
+          question_id == current_question_) {
+        participant_think_times_[participant_id][question_id] = think_time;
+      }
     }
   }
   send_answers_to_quizmaster();
+  send_think_times_to_quizmaster();
 }
 
 void quiz_runner::send_participants_to_quizmaster() {
@@ -174,6 +186,22 @@ void quiz_runner::send_answers_to_quizmaster() {
   }
   for (auto& callback : quizmaster_callbacks_) {
     callback(nlohmann::json{{"msg", "answers_updated"}, {"value", update}});
+  }
+}
+
+void quiz_runner::send_think_times_to_quizmaster() {
+  nlohmann::json update;
+  for (const auto& [participant_id, data] : participant_think_times_) {
+    for (const auto& [question_id, think_time] : data) {
+      update.push_back(nlohmann::json{
+          {"participant_id", participant_id},
+          {"question_id", question_id},
+          {"answer", think_time},
+      });
+    }
+  }
+  for (auto& callback : quizmaster_callbacks_) {
+    callback(nlohmann::json{{"msg", "think_times"}, {"value", update}});
   }
 }
 

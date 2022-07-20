@@ -61,7 +61,7 @@
             <h1 v-if="current_question" class="title">{{ current_question.question }}</h1>
             <h2 v-if="countdown" class="subtitle">Seconds remaining: {{ countdown }}</h2>
 
-            <div v-for="(answer, index) in current_question.answers">
+            <div v-if="current_question" v-for="(answer, index) in current_question.answers">
                 <p class="block">
                     <button v-if="answering_time && is_chosen_answer(current_question, index)" class="button is-medium is-info is-fullwidth            " v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
                     <button v-if="answering_time && !is_chosen_answer(current_question, index)" class="button is-medium is-info is-fullwidth is-outlined" v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
@@ -96,13 +96,16 @@
         try {
             new_answers = [];
             for (let answer of app.$data.current_question.answers) {
-                console.log('check', answer);
                 if (answer[1] == ')') {
                     new_answers.push("" + answer[0]);
+                } else {
+                    new_answers.push(answer);
                 }
             }
             app.$data.current_question.answers = new_answers;
-        } catch (e) {}
+        } catch (e) {
+            console.log(e);
+        }
     }
 
     let countdown = null;

@@ -37,10 +37,10 @@ public:
     }
     reset();
     if (!t.joinable()) {
-      t = std::thread([=]() {
-        std::unique_lock<std::mutex> lock(mut);
+      t = std::thread([=, this]() {
+        std::unique_lock lock(mut);
         while (true) {
-          cv.wait_until(lock, time, [=]() {
+          cv.wait_until(lock, time, [=, this]() {
             return stop;
           });
           if (stop) return;
@@ -55,7 +55,7 @@ public:
   }
 
   void cancel() {
-    std::unique_lock<std::mutex> l(mut);
+    std::unique_lock l(mut);
     fun = []() {};
     stop = true;
     l.unlock();
@@ -64,7 +64,7 @@ public:
 
 private:
   void reset() {
-    std::unique_lock<std::mutex> lock(mut);
+    std::unique_lock lock(mut);
     time = std::chrono::high_resolution_clock::now() + delay;
   }
 };

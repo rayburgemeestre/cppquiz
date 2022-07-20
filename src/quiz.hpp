@@ -50,6 +50,13 @@ public:
   const std::vector<answer>& answers_with_solution() const {
     return answers_;
   }
+
+  bool is_answer_correct(size_t index) {
+    if (index >= answers_.size()) {
+      return false;
+    }
+    return answers_[index].is_correct();
+  }
 };
 
 class quiz {

@@ -102,12 +102,14 @@
                     <tr>
                         <th>Leaderboard</th>
                         <th>score</th>
+                        <th>think time</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr v-for="(participant, index) in leaderboard">
                         <td>{{ participant.nickname }}</td>
                         <td>{{ participant.score }}</td>
+                        <td>{{ participant.think_time }}</td>
                     </tr>
                     </tbody>
                 </table>
@@ -168,6 +170,7 @@
                 solutions: {},
                 question_state: 0,
                 answering_time: false,
+                think_times: [],
                 countdown: '',
             }
         },
@@ -238,15 +241,23 @@
                     if (uuid in participant_uuid_to_nickname) {
                         nickname = participant_uuid_to_nickname[uuid];
                     }
+                    cum_think_time = 0;
+                    for (let p of this.$data.think_times) {
+                        if (p['participant_id'] == uuid) {
+                            cum_think_time += p['answer'];
+                        }
+                    }
                     leaderboard.push({
                         nickname: nickname,
                         score: score,
+                        think_time: Math.round(cum_think_time) / 1000.,
                     });
                 }
                 leaderboard.sort(function (a,b) {
                     return (a.score > b.score) ? -1 : ((b.score > a.score) ? 1 : 0);
                 });
-                return leaderboard.slice(0, 5);
+                // return leaderboard.slice(0, 5);
+                return leaderboard;
             }
         }
     }).mount('#app')
@@ -303,6 +314,10 @@
                 };
                 counter();
             }
+        }
+        else if (message['msg'] === 'think_times') {
+            app.$data.think_times = message['value'];
+            console.log(app.$data.think_times);
         }
     }, function () {
         api.send({'msg': 'hello'});
