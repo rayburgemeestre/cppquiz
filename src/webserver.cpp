@@ -67,11 +67,11 @@ webserver::webserver()
                                                               answer{"Bread and Milk", false},
                                                               answer{"Croissant", false},
                                                               answer{"Omelette du fromage", true},
-                                                              answer{"None of the above", false},
+                                                              answer{"None of the above", true},
                                                           }},
                                              }))),
-      participant_handler_(std::make_shared<participant_handler>(quiz_runner_)),
-      quizmaster_handler_(std::make_shared<quizmaster_handler>(quiz_runner_)) {
+      participant_handler_(std::make_shared<participant_handler>(server_, quiz_runner_)),
+      quizmaster_handler_(std::make_shared<quizmaster_handler>(server_, quiz_runner_)) {
   auto root = std::make_shared<seasocks::RootPageHandler>();
   root->add(std::make_shared<seasocks::PathHandler>("data", std::make_shared<DataHandler>()));
   server_->addPageHandler(root);

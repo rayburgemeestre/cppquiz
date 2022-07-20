@@ -13,15 +13,15 @@
 
 using json = nlohmann::json;
 
-participant_handler::participant_handler(std::shared_ptr<quiz_runner> quiz_runner) : quiz_runner_(quiz_runner) {
+participant_handler::participant_handler(std::shared_ptr<seasocks::Server> server,
+                                         std::shared_ptr<quiz_runner> quiz_runner)
+    : server_(server), quiz_runner_(quiz_runner) {
   quiz_runner_->add_participant_callback([&](nlohmann::json msg) {
-    if (msg["msg"] == "start_quiz") {
+    if (msg["msg"] == "start_quiz" || msg["msg"] == "set_question" || msg["msg"] == "set_answering_time") {
       for (auto &con : connections_) {
-        con->send(msg.dump());
-      }
-    } else if (msg["msg"] == "set_question") {
-      for (auto &con : connections_) {
-        con->send(msg.dump());
+        server_->execute([=]() {
+          con->send(msg.dump());
+        });
       }
     }
   });
@@ -50,6 +50,7 @@ void participant_handler::onData(seasocks::WebSocket *con, const char *data) {
           {"quiz_started", quiz_runner_->quiz_started()},
           {"quiz_id", quiz_runner_->quiz_id()},
           {"current_question", quiz_runner_->current_question_json()},
+          {"answering_time", quiz_runner_->answering_time()},
       }
                     .dump());
     } else if (client_msg["msg"] == "set_nickname") {

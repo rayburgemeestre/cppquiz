@@ -21,8 +21,37 @@
         Current question ID: {{ current_question_id }}<br/>
         Current question: {{ current_question }}<br/>
         Num questions in set: {{ num_questions }}<br/>
-        <button @click="next_question">Next question</button>
+
+        <button v-if="question_state == 0" @click="next_question">Next question</button>
+        <button v-if="question_state >= 1 && question_state < 1000" @click="expand_question">Expand</button>
+        <button v-if="question_state == 1000" @click="start_question">START</button>
+
     </div>
+
+    <div v-if="quiz_started">
+        <div v-if="current_question">
+            <h2>{{ current_question.question }}</h2>
+
+            <div v-for="(answer, index) in current_question.answers">
+                <button v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                <br/>
+                <br/>
+            </div>
+        </div>
+    </div>
+
+    <h2>Leaderboard</h2>
+    <table>
+        <tr>
+            <th>Nickname</th>
+            <th>Score</th>
+        </tr>
+        <tr v-for="(participant, index) in leaderboard">
+            <td>{{ participant.nickname }}</td>
+            <td>{{ participant.score }}</td>
+        </tr>
+    </table>
+
 
     <h2>Participants</h2>
     <ul>
@@ -30,11 +59,6 @@
             {{ participant.nickname }} ({{ participant.unique_id }}, {{ participant.connected }})
         </li>
     </ul>
-
-    <h2>Answers received so far</h2>
-    <pre>
-        {{ answers }}
-    </pre>
 </div>
 
 <script>
@@ -62,6 +86,9 @@
                 quiz_id: '',
                 num_questions: 0,
                 answers: {},
+                solutions: {},
+                question_state: 0,
+                answering_time: false,
             }
         },
         methods: {
@@ -77,8 +104,59 @@
             next_question() {
                 api.send({'msg': 'next_question'});
             },
+            expand_question() {
+                api.send({'msg': 'expand_question'});
+            },
+            start_question() {
+                api.send({'msg': 'start_question'});
+            },
         },
-        watch: {
+        computed: {
+            leaderboard() {
+                let question_solutions_map = {};
+                let participant_scores = {};
+
+                try {
+
+                    for (let sol of this.$data.solutions) {
+                        if (!(sol['question_id'] in question_solutions_map))
+                            question_solutions_map[sol['question_id']] = new Set();
+                        question_solutions_map[sol['question_id']].add(sol['answer_id']);
+                    }
+                } catch (e) { return []; }
+
+                for (let answer of this.$data.answers) {
+                    if (!(answer['participant_id'] in participant_scores)) {
+                        participant_scores[answer['participant_id']] = 0;
+                    }
+                    if (answer['question_id'] in question_solutions_map &&
+                    question_solutions_map[answer['question_id']].has(answer['answer'])) {
+                        participant_scores[answer['participant_id']]++;
+                    }
+                }
+
+                let participant_uuid_to_nickname = {};
+                for (let participant of this.$data.participants) {
+                    participant_uuid_to_nickname[participant['unique_id']] = participant['nickname'];
+                }
+
+                let leaderboard = [];
+                for (let uuid in participant_scores) {
+                    let nickname = uuid;
+                    let score = participant_scores[uuid];
+                    if (uuid in participant_uuid_to_nickname) {
+                        nickname = participant_uuid_to_nickname[uuid];
+                    }
+                    leaderboard.push({
+                        nickname: nickname,
+                        score: score,
+                    });
+                }
+                leaderboard.sort(function (a,b) {
+                    return (a.score > b.score) ? -1 : ((b.score > a.score) ? 1 : 0);
+                });
+                return leaderboard.slice(0, 5);
+            }
         }
     }).mount('#app')
 
@@ -93,6 +171,8 @@
             app.$data.current_question = message['current_question'];
             app.$data.current_question_id = message['current_question_id'];
             app.$data.num_questions = message['num_questions'];
+            app.$data.question_state = message['question_state'];
+            app.$data.answering_time = message['answering_time'];
         }
         else if (message['msg'] === 'participants') {
             app.$data.participants = message['value'];
@@ -104,10 +184,21 @@
             app.$data.current_question = message["value"];
             try {
                 app.$data.current_question_id = app.$data.current_question.question_id;
+                app.$data.question_state = app.$data.current_question.question_state;
             } catch (e) {}
         }
         else if (message['msg'] === 'answers_updated') {
             app.$data.answers = message['value'];
+        }
+        else if (message['msg'] === 'solutions') {
+            app.$data.solutions = message['value'];
+        }
+        else if (message['msg'] === 'set_answering_time') {
+            app.$data.answering_time = message['value'];
+            if (!app.$data.answering_time) {
+                app.$data.question_state = 0;
+                app.$data.current_question = {};
+            }
         }
     }, function () {
         api.send({'msg': 'hello'});

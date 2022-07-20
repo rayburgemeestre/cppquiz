@@ -12,24 +12,23 @@
 
 using json = nlohmann::json;
 
-quizmaster_handler::quizmaster_handler(std::shared_ptr<quiz_runner> quiz_runner) : quiz_runner_(quiz_runner) {
+quizmaster_handler::quizmaster_handler(std::shared_ptr<seasocks::Server> server,
+                                       std::shared_ptr<quiz_runner> quiz_runner)
+    : server_(server), quiz_runner_(quiz_runner) {
   quiz_runner_->add_quizmaster_callback([&](nlohmann::json msg) {
     if (msg["msg"] == "add_participant") {
       for (auto &con : confirmed_connections_) {
-        con->send(msg.dump());
+        server_->execute([=]() {
+          con->send(msg.dump());
+        });
       }
       quiz_runner_->send_participants_to_quizmaster();
-    } else if (msg["msg"] == "set_question") {
+    } else if (msg["msg"] == "set_question" || msg["msg"] == "answers_updated" || msg["msg"] == "participants" ||
+               msg["msg"] == "solutions" || msg["msg"] == "set_answering_time") {
       for (auto &con : confirmed_connections_) {
-        con->send(msg.dump());
-      }
-    } else if (msg["msg"] == "answers_updated") {
-      for (auto &con : confirmed_connections_) {
-        con->send(msg.dump());
-      }
-    } else if (msg["msg"] == "participants") {
-      for (auto &con : confirmed_connections_) {
-        con->send(msg.dump());
+        server_->execute([=]() {
+          con->send(msg.dump());
+        });
       }
     }
   });
@@ -62,10 +61,13 @@ void quizmaster_handler::onData(seasocks::WebSocket *con, const char *data) {
             {"current_question", quiz_runner_->current_question_json()},
             {"current_question_id", quiz_runner_->current_question()},
             {"num_questions", quiz_runner_->num_questions()},
+            {"question_state", quiz_runner_->question_state()},
+            {"answering_time", quiz_runner_->answering_time()},
         }
                       .dump());
         quiz_runner_->send_participants_to_quizmaster();
         quiz_runner_->send_answers_to_quizmaster();
+        quiz_runner_->send_correct_answers_to_quizmaster();
       } else {
         con->send(nlohmann::json{
             {"msg", "hello"},
@@ -92,6 +94,10 @@ void quizmaster_handler::onData(seasocks::WebSocket *con, const char *data) {
                       .dump());
       } else if (json["msg"] == "next_question") {
         quiz_runner_->next_question();
+      } else if (json["msg"] == "expand_question") {
+        quiz_runner_->expand_question();
+      } else if (json["msg"] == "start_question") {
+        quiz_runner_->start_question();
       }
     }
   } catch (const nlohmann::json::exception &e) {

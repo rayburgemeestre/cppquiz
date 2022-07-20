@@ -20,7 +20,7 @@ public:
     return answer_;
   }
 
-  bool is_correct() {
+  bool is_correct() const {
     return is_correct_;
   }
 };
@@ -45,6 +45,10 @@ public:
       the_answers.push_back(answer.get_answer());
     }
     return the_answers;
+  }
+
+  const std::vector<answer>& answers_with_solution() const {
+    return answers_;
   }
 };
 

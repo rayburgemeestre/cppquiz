@@ -32,7 +32,8 @@
             <br/>
 
             <div v-for="(answer, index) in current_question.answers">
-                <button v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                <button v-if="answering_time" v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                <span v-if="!answering_time"><strong>{{ answer }}</strong></span>
                 <span v-if="current_question.quiz_id in local_answers && current_question.question_id in local_answers[current_question.quiz_id] && local_answers[current_question.quiz_id][current_question.question_id] === index">You have chosen this option!</span>
                 <br/>
                 <br/>
@@ -67,6 +68,7 @@
                 quiz_started: false,
                 current_question: {},
                 local_answers: answers,
+                answering_time: false,
             }
         },
         watch: {
@@ -99,6 +101,7 @@
             app.$data.message = message['value'] + "!!!";
             app.$data.quiz_started = message['quiz_started'];
             app.$data.current_question = message['current_question'];
+            app.$data.answering_time = message['answering_time'];
             // send nickname in case user updated it during a disconnected state
             api.send({'msg': 'set_nickname', 'nickname': app.$data.nickname});
             // whatever we had cached for answers, send it
@@ -112,6 +115,13 @@
         }
         else if (message['msg'] === 'set_question') {
             app.$data.current_question = message["value"];
+        }
+        else if (message['msg'] === 'set_answering_time') {
+            app.$data.answering_time = message["value"];
+            if (!app.$data.answering_time) {
+                app.$data.question_state = 0;
+                app.$data.current_question = {};
+            }
         }
     }, function () {
         api.send({'msg': 'hello'});

@@ -39,6 +39,7 @@ file(GLOB_RECURSE cppquiz_SOURCES "src/**.cpp" "src/**.hpp" "src/**.h")
 add_executable(cppquiz ${cppquiz_SOURCES})
 
 target_link_libraries(cppquiz PRIVATE -static-libgcc -static-libstdc++)
+target_link_libraries(cppquiz PRIVATE -lpthread)
 target_link_libraries(cppquiz PRIVATE /opt/cppse/build/fmt/lib/libfmt.a)
 target_link_libraries(cppquiz PRIVATE /opt/cppse/build/seasocks/lib/libseasocks.a)
 target_link_libraries(cppquiz PRIVATE /usr/lib/x86_64-linux-gnu/libz.a)

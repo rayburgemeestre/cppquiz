@@ -3,10 +3,11 @@
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+
 #include "quiz_runner.h"
 #include "util/logger.h"
 
-quiz_runner::quiz_runner(quiz the_quiz) : quiz_(std::move(the_quiz)) {}
+quiz_runner::quiz_runner(quiz the_quiz) : quiz_(std::move(the_quiz)), stop_executor(std::chrono::milliseconds(10000)) {}
 
 void quiz_runner::add_participant(const std::string& unique_id, const std::string& nickname) {
   if (!participants_.contains(unique_id)) {
@@ -61,6 +62,9 @@ void quiz_runner::next_question() {
   } else {
     current_question_++;
   }
+  next_question_ = current_question_;
+  question_state_ = 0;
+
   auto question_json = current_question_json();
   question_json["msg"] = "next_question";
   for (auto& callback : participant_callbacks_) {
@@ -73,13 +77,62 @@ void quiz_runner::next_question() {
     callback(nlohmann::json{
         {"msg", "set_question"},
         {"value", question_json},
+        {"current_state", question_state_ + 1},
     });
   }
 }
 
-void quiz_runner::set_answers(std::string participant_id, nlohmann::json answers) {
-  logger(INFO) << "Setting answers" << std::endl;
+void quiz_runner::expand_question() {
+  question_state_++;
 
+  if (question_state_ == quiz_.get_question(current_question_).answers().size() || question_state_ > 999)
+    question_state_ = 999;
+
+  auto question_json = current_question_json();
+  question_json["msg"] = "next_question";
+  for (auto& callback : participant_callbacks_) {
+    callback(nlohmann::json{
+        {"msg", "set_question"},
+        {"value", question_json},
+    });
+  }
+
+  for (auto& callback : quizmaster_callbacks_) {
+    callback(nlohmann::json{
+        {"msg", "set_question"},
+        {"value", question_json},
+        {"current_state", question_state_ + 1},
+    });
+  }
+  send_correct_answers_to_quizmaster();
+}
+
+void quiz_runner::start_question() {
+  answering_time_ = true;
+  const auto send_answering_time = [=](bool value) {
+    for (auto& callback : participant_callbacks_) {
+      callback(nlohmann::json{
+          {"msg", "set_answering_time"},
+          {"value", value},
+      });
+    }
+    for (auto& callback : quizmaster_callbacks_) {
+      callback(nlohmann::json{
+          {"msg", "set_answering_time"},
+          {"value", value},
+      });
+    }
+  };
+  send_answering_time(true);
+  stop_executor.run([=, this]() {
+    send_answering_time(false);
+    question_state_ = 0;
+    next_question_++;
+    send_correct_answers_to_quizmaster();
+  });
+}
+
+void quiz_runner::set_answers(std::string participant_id, nlohmann::json answers) {
   participant_answers[participant_id].clear();
   for (const auto& item : answers.items()) {
     for (const auto& item2 : item.value().items()) {
@@ -89,7 +142,6 @@ void quiz_runner::set_answers(std::string participant_id, nlohmann::json answers
       participant_answers[participant_id].emplace_back(quiz_id, question_id, answer);
     }
   }
-
   send_answers_to_quizmaster();
 }
 
@@ -124,6 +176,26 @@ void quiz_runner::send_answers_to_quizmaster() {
   }
 }
 
+void quiz_runner::send_correct_answers_to_quizmaster() {
+  nlohmann::json ret;
+  size_t index = 0;
+  for (const auto& question : quiz_.questions()) {
+    if (index < next_question_ && next_question_ != std::numeric_limits<size_t>::max()) {
+      size_t answer_index = 0;
+      for (const auto& answer : question.answers_with_solution()) {
+        if (answer.is_correct()) {
+          ret.push_back(nlohmann::json{{"question_id", index}, {"answer_id", answer_index}});
+        }
+        answer_index++;
+      }
+    }
+    index++;
+  }
+  for (auto& callback : quizmaster_callbacks_) {
+    callback(nlohmann::json{{"msg", "solutions"}, {"value", ret}});
+  }
+}
+
 const std::map<std::string, participant>& quiz_runner::get_participants() {
   return participants_;
 }
@@ -152,14 +224,27 @@ nlohmann::json quiz_runner::current_question_json() const {
   if (current_question_ >= quiz_.questions().size()) {
     return nlohmann::json{};
   }
+  auto answers = quiz_.get_question(current_question_).answers();
+  while (answers.size() > question_state_) {
+    answers.pop_back();
+  }
   return nlohmann::json{
       {"quiz_id", quiz_id_},
       {"question_id", current_question_},
       {"question", quiz_.get_question(current_question_).get_question()},
-      {"answers", quiz_.get_question(current_question_).answers()},
+      {"answers", answers},
+      {"question_state", question_state_ + 1},
   };
 }
 
 size_t quiz_runner::num_questions() const {
   return quiz_.questions().size();
+}
+
+int quiz_runner::question_state() const {
+  return question_state_;
+}
+
+bool quiz_runner::answering_time() const {
+  return answering_time_;
 }

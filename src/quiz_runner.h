@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <map>
+#include "delayed_executor.hpp"
 #include "nlohmann/json.hpp"
 #include "participant.hpp"
 #include "quiz.hpp"
@@ -16,6 +17,9 @@ private:
   std::string quiz_id_;
   quiz quiz_;
   size_t current_question_ = std::numeric_limits<size_t>::max();
+  size_t next_question_ = std::numeric_limits<size_t>::max();
+  int question_state_ = 0;
+  bool answering_time_ = false;
   std::map<std::string, participant> participants_;
   std::map<std::string, std::vector<std::tuple<std::string, int, int>>> participant_answers;
 
@@ -23,6 +27,7 @@ private:
   std::vector<std::function<void(nlohmann::json)>> quizmaster_callbacks_;
 
   bool quiz_started_ = false;
+  delayed_executor stop_executor;
 
 public:
   quiz_runner(quiz the_quiz);
@@ -32,6 +37,8 @@ public:
   void start_quiz(std::string quiz_id);
   void stop_quiz();
   void next_question();
+  void expand_question();
+  void start_question();
   void set_answers(std::string participant_id, nlohmann::json answers);
 
   const decltype(participants_)& get_participants();
@@ -41,10 +48,13 @@ public:
 
   void send_participants_to_quizmaster();
   void send_answers_to_quizmaster();
+  void send_correct_answers_to_quizmaster();
 
   bool quiz_started() const;
   const std::string& quiz_id() const;
   size_t current_question() const;
   nlohmann::json current_question_json() const;
   size_t num_questions() const;
+  int question_state() const;
+  bool answering_time() const;
 };
