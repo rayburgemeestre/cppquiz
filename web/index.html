@@ -13,10 +13,31 @@
     UUID: {{ uuid }} <br/>
     Message: {{ message }} <br/>
 
+    <!-- debug -->
+    <button @click="clear_local_storage">Clear local storage</button>
+
     Change your name here: <input type="text" v-model="nickname">
 
     <div v-if="quiz_started">
-        The quiz has started!
+        The quiz has started! <br/>
+
+        Current question: {{ current_question }} <br/>
+        Your answers so far: {{ local_answers }} <br/>
+
+        <div v-if="current_question">
+            <h2>{{ current_question.question }}</h2>
+
+            Please click to select your answer of choice. <br/>
+            You can change your mind, until time is up. <br/>
+            <br/>
+
+            <div v-for="(answer, index) in current_question.answers">
+                <button v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                <span v-if="current_question.quiz_id in local_answers && current_question.question_id in local_answers[current_question.quiz_id] && local_answers[current_question.quiz_id][current_question.question_id] === index">You have chosen this option!</span>
+                <br/>
+                <br/>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -31,6 +52,10 @@
         localStorage.setItem('nickname', 'Anonymous Bastard');
     nickname = localStorage.getItem('nickname');
 
+    if (!localStorage.getItem('answers3'))
+        localStorage.setItem('answers3', "{}");
+    answers = JSON.parse(localStorage.getItem('answers3'));
+
     let api = null;
     let app = createApp({
         data() {
@@ -39,7 +64,9 @@
                 message: '',
                 nickname: nickname,
                 uuid: unique_id,
-                quiz_started: false
+                quiz_started: false,
+                current_question: {},
+                local_answers: answers,
             }
         },
         watch: {
@@ -48,6 +75,19 @@
                 if (api) {
                     api.send({'msg': 'set_nickname', 'nickname': newnick});
                 }
+            }
+        },
+        methods: {
+            set_answer(quiz_id, question_id, answer_idx) {
+                if (!(quiz_id in app.$data.local_answers)) {
+                    app.$data.local_answers[quiz_id] = {};
+                }
+                app.$data.local_answers[quiz_id][question_id] = answer_idx;
+                localStorage.setItem('answers3', JSON.stringify(app.$data.local_answers));
+                api.send({'msg': 'set_answers', 'answers': app.$data.local_answers});
+            },
+            clear_local_storage() {
+                localStorage.setItem('answers3', "{}");
             }
         }
     }).mount('#app')
@@ -58,14 +98,20 @@
         if (message['msg'] === 'hello') {
             app.$data.message = message['value'] + "!!!";
             app.$data.quiz_started = message['quiz_started'];
+            app.$data.current_question = message['current_question'];
             // send nickname in case user updated it during a disconnected state
             api.send({'msg': 'set_nickname', 'nickname': app.$data.nickname});
+            // whatever we had cached for answers, send it
+            api.send({'msg': 'set_answers', 'answers': app.$data.local_answers});
         }
         else if (message['msg'] === 'set_nickname') {
             app.$data.message = message['value'];
         }
         else if (message['msg'] === 'start_quiz') {
             app.$data.quiz_started = message["value"];
+        }
+        else if (message['msg'] === 'set_question') {
+            app.$data.current_question = message["value"];
         }
     }, function () {
         api.send({'msg': 'hello'});

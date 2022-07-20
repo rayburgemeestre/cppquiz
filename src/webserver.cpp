@@ -62,6 +62,13 @@ webserver::webserver()
                                                               answer{"42", true},
                                                               answer{"43", false},
                                                           }},
+                                                 question{"What did you have for breakfast today?",
+                                                          {
+                                                              answer{"Bread and Milk", false},
+                                                              answer{"Croissant", false},
+                                                              answer{"Omelette du fromage", true},
+                                                              answer{"None of the above", false},
+                                                          }},
                                              }))),
       participant_handler_(std::make_shared<participant_handler>(quiz_runner_)),
       quizmaster_handler_(std::make_shared<quizmaster_handler>(quiz_runner_)) {

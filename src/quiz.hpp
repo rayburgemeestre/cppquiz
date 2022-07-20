@@ -16,7 +16,7 @@ private:
 public:
   answer(std::string answer, bool is_correct) : answer_(std::move(answer)), is_correct_(is_correct) {}
 
-  std::string get_answer() {
+  std::string get_answer() const {
     return answer_;
   }
 
@@ -33,6 +33,19 @@ private:
 public:
   question(std::string question, std::vector<answer> answers)
       : question_(std::move(question)), answers_(std::move(answers)) {}
+
+  std::string get_question() const {
+    return question_;
+  }
+
+  std::vector<std::string> answers() const {
+    // important not to include the info about which is correct here
+    std::vector<std::string> the_answers;
+    for (const auto& answer : answers_) {
+      the_answers.push_back(answer.get_answer());
+    }
+    return the_answers;
+  }
 };
 
 class quiz {
@@ -43,4 +56,12 @@ private:
 public:
   quiz(std::string quiz_name, std::vector<question> questions)
       : quiz_name_(std::move(quiz_name)), questions_(std::move(questions)) {}
+
+  question get_question(size_t question_number) const {
+    return questions_[question_number];
+  }
+
+  const std::vector<question>& questions() const {
+    return questions_;
+  }
 };

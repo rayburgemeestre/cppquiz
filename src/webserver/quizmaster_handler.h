@@ -20,7 +20,4 @@ struct quizmaster_handler : seasocks::WebSocket::Handler {
   void onConnect(seasocks::WebSocket *con) override;
   void onDisconnect(seasocks::WebSocket *con) override;
   void onData(seasocks::WebSocket *con, const char *data) override;
-
-private:
-  void send_participants();
 };

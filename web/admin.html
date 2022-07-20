@@ -16,7 +16,12 @@
     <button v-if="quiz_started" @click="stop_quiz">Stop quiz</button>
 
     <div v-if="quiz_started">
-        The quiz has started!
+        The quiz has started! quiz_id = {{ quiz_id }}
+        <br/>
+        Current question ID: {{ current_question_id }}<br/>
+        Current question: {{ current_question }}<br/>
+        Num questions in set: {{ num_questions }}<br/>
+        <button @click="next_question">Next question</button>
     </div>
 
     <h2>Participants</h2>
@@ -25,6 +30,11 @@
             {{ participant.nickname }} ({{ participant.unique_id }}, {{ participant.connected }})
         </li>
     </ul>
+
+    <h2>Answers received so far</h2>
+    <pre>
+        {{ answers }}
+    </pre>
 </div>
 
 <script>
@@ -47,14 +57,25 @@
                 uuid: unique_id,
                 participants: [],
                 quiz_started: false,
+                current_question: {},
+                current_question_id: -1,
+                quiz_id: '',
+                num_questions: 0,
+                answers: {},
             }
         },
         methods: {
             start_quiz() {
-                api.send({'msg': 'start_quiz'});
+                if (app.$data.quiz_id === '') {
+                    app.$data.quiz_id = uuidv4();
+                }
+                api.send({'msg': 'start_quiz', 'quiz_id': app.$data.quiz_id});
             },
             stop_quiz() {
                 api.send({'msg': 'stop_quiz'});
+            },
+            next_question() {
+                api.send({'msg': 'next_question'});
             },
         },
         watch: {
@@ -68,12 +89,25 @@
         if (message['msg'] === 'hello') {
             app.$data.message = message['value'];
             app.$data.quiz_started = message['quiz_started'];
+            app.$data.quiz_id = message['quiz_id'];
+            app.$data.current_question = message['current_question'];
+            app.$data.current_question_id = message['current_question_id'];
+            app.$data.num_questions = message['num_questions'];
         }
         else if (message['msg'] === 'participants') {
             app.$data.participants = message['value'];
         }
         else if (message['msg'] === 'quiz_started') {
             app.$data.quiz_started = message['value'];
+        }
+        else if (message['msg'] === 'set_question') {
+            app.$data.current_question = message["value"];
+            try {
+                app.$data.current_question_id = app.$data.current_question.question_id;
+            } catch (e) {}
+        }
+        else if (message['msg'] === 'answers_updated') {
+            app.$data.answers = message['value'];
         }
     }, function () {
         api.send({'msg': 'hello'});

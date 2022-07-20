@@ -19,6 +19,10 @@ participant_handler::participant_handler(std::shared_ptr<quiz_runner> quiz_runne
       for (auto &con : connections_) {
         con->send(msg.dump());
       }
+    } else if (msg["msg"] == "set_question") {
+      for (auto &con : connections_) {
+        con->send(msg.dump());
+      }
     }
   });
 }
@@ -44,6 +48,8 @@ void participant_handler::onData(seasocks::WebSocket *con, const char *data) {
           {"msg", "hello"},
           {"value", "Hi there!"},
           {"quiz_started", quiz_runner_->quiz_started()},
+          {"quiz_id", quiz_runner_->quiz_id()},
+          {"current_question", quiz_runner_->current_question_json()},
       }
                     .dump());
     } else if (client_msg["msg"] == "set_nickname") {
@@ -55,6 +61,9 @@ void participant_handler::onData(seasocks::WebSocket *con, const char *data) {
           {"value", fmt::format("Nice to meet you {}!", client_msg["nickname"])},
       }
                     .dump());
+      quiz_runner_->send_participants_to_quizmaster();
+    } else if (client_msg["msg"] == "set_answers") {
+      quiz_runner_->set_answers(client_msg["unique_id"], client_msg["answers"]);
     }
   } catch (const nlohmann::json::exception &e) {
     logger(ERROR) << "Error parsing JSON: " << e.what() << std::endl;
