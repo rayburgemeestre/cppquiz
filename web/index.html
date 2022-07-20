@@ -14,6 +14,10 @@
     Message: {{ message }} <br/>
 
     Change your name here: <input type="text" v-model="nickname">
+
+    <div v-if="quiz_started">
+        The quiz has started!
+    </div>
 </div>
 
 <script>
@@ -34,7 +38,8 @@
                 server_state: 'initializing',
                 message: '',
                 nickname: nickname,
-                uuid: unique_id
+                uuid: unique_id,
+                quiz_started: false
             }
         },
         watch: {
@@ -52,11 +57,15 @@
     }, function (message) {
         if (message['msg'] === 'hello') {
             app.$data.message = message['value'] + "!!!";
+            app.$data.quiz_started = message['quiz_started'];
             // send nickname in case user updated it during a disconnected state
             api.send({'msg': 'set_nickname', 'nickname': app.$data.nickname});
         }
         else if (message['msg'] === 'set_nickname') {
             app.$data.message = message['value'];
+        }
+        else if (message['msg'] === 'start_quiz') {
+            app.$data.quiz_started = message["value"];
         }
     }, function () {
         api.send({'msg': 'hello'});

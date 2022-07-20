@@ -12,7 +12,12 @@
     Server state: {{ server_state }} <br/>
     UUID: {{ uuid }} <br/>
     Message: {{ message }} <br/>
-    <button @click="start_quiz">Start quiz</button>
+    <button v-if="!quiz_started" @click="start_quiz">Start quiz</button>
+    <button v-if="quiz_started" @click="stop_quiz">Stop quiz</button>
+
+    <div v-if="quiz_started">
+        The quiz has started!
+    </div>
 
     <h2>Participants</h2>
     <ul>
@@ -41,12 +46,16 @@
                 message: '',
                 uuid: unique_id,
                 participants: [],
+                quiz_started: false,
             }
         },
         methods: {
-          start_quiz() {
-              console.log('TODO');
-          }
+            start_quiz() {
+                api.send({'msg': 'start_quiz'});
+            },
+            stop_quiz() {
+                api.send({'msg': 'stop_quiz'});
+            },
         },
         watch: {
         }
@@ -58,9 +67,13 @@
         console.log(message);
         if (message['msg'] === 'hello') {
             app.$data.message = message['value'];
+            app.$data.quiz_started = message['quiz_started'];
         }
         else if (message['msg'] === 'participants') {
             app.$data.participants = message['value'];
+        }
+        else if (message['msg'] === 'quiz_started') {
+            app.$data.quiz_started = message['value'];
         }
     }, function () {
         api.send({'msg': 'hello'});

@@ -13,11 +13,13 @@
 using json = nlohmann::json;
 
 quizmaster_handler::quizmaster_handler(std::shared_ptr<quiz_runner> quiz_runner) : quiz_runner_(quiz_runner) {
-  quiz_runner_->on_new_participant([&](std::string unique_id) {
-    for (auto &con : confirmed_connections_) {
-      con->send(nlohmann::json({{"msg", "new_participant"}, {"value", unique_id}}).dump());
+  quiz_runner_->add_participant_callback([&](nlohmann::json msg) {
+    if (msg["msg"] == "add_participant") {
+      for (auto &con : confirmed_connections_) {
+        con->send(msg.dump());
+      }
+      send_participants();
     }
-    send_participants();
   });
 }
 
@@ -43,6 +45,7 @@ void quizmaster_handler::onData(seasocks::WebSocket *con, const char *data) {
         con->send(nlohmann::json{
             {"msg", "hello"},
             {"value", "Hi there Mr. Admin!"},
+            {"quiz_started", quiz_runner_->quiz_started()},
         }
                       .dump());
         send_participants();
@@ -53,6 +56,24 @@ void quizmaster_handler::onData(seasocks::WebSocket *con, const char *data) {
         }
                       .dump());
         con->close();
+      }
+    } else if (quizmaster_uuid_ == json["unique_id"]) {
+      if (json["msg"] == "start_quiz") {
+        logger(INFO) << "Starting quiz" << std::endl;
+        quiz_runner_->start_quiz();
+        con->send(nlohmann::json{
+            {"msg", "quiz_started"},
+            {"value", quiz_runner_->quiz_started()},
+        }
+                      .dump());
+      } else if (json["msg"] == "stop_quiz") {
+        logger(INFO) << "Stop quiz" << std::endl;
+        quiz_runner_->stop_quiz();
+        con->send(nlohmann::json{
+            {"msg", "quiz_started"},
+            {"value", quiz_runner_->quiz_started()},
+        }
+                      .dump());
       }
     }
   } catch (const nlohmann::json::exception &e) {

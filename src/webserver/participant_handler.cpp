@@ -13,7 +13,15 @@
 
 using json = nlohmann::json;
 
-participant_handler::participant_handler(std::shared_ptr<quiz_runner> quiz_runner) : quiz_runner_(quiz_runner) {}
+participant_handler::participant_handler(std::shared_ptr<quiz_runner> quiz_runner) : quiz_runner_(quiz_runner) {
+  quiz_runner_->add_participant_callback([&](nlohmann::json msg) {
+    if (msg["msg"] == "start_quiz") {
+      for (auto &con : connections_) {
+        con->send(msg.dump());
+      }
+    }
+  });
+}
 
 void participant_handler::onConnect(seasocks::WebSocket *con) {
   connections_.insert(con);
@@ -35,6 +43,7 @@ void participant_handler::onData(seasocks::WebSocket *con, const char *data) {
       con->send(nlohmann::json{
           {"msg", "hello"},
           {"value", "Hi there!"},
+          {"quiz_started", quiz_runner_->quiz_started()},
       }
                     .dump());
     } else if (client_msg["msg"] == "set_nickname") {
