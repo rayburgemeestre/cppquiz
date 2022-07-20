@@ -6,6 +6,7 @@
 
 #include "webserver.h"
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include "nlohmann/json.hpp"
 #include "quiz_runner.h"
@@ -50,26 +51,42 @@ public:
   Level minLevelToLog;
 };
 
+std::vector<question> read_questions_from_file(std::string filename) {
+  std::vector<question> questions;
+
+  std::ifstream fi(filename);
+  std::string line;
+  std::string current_question;
+  std::vector<answer> current_answers;
+  while (std::getline(fi, line)) {
+    if (line.empty()) continue;
+    if (line[0] == 'Q') {
+      if (!current_question.empty()) {
+        questions.emplace_back(current_question, current_answers);
+        current_answers.clear();
+      }
+      current_question = line.substr(3, line.size() - 3);
+      current_answers.clear();
+    } else if (line[0] == '*') {
+      auto current_answer = line.substr(4, line.size() - 4);
+      current_answers.emplace_back(current_answer, true);
+    } else if (line[0] == 'A') {
+      auto current_answer = line.substr(3, line.size() - 3);
+      current_answers.emplace_back(current_answer, false);
+    }
+  }
+  if (!current_question.empty()) {
+    questions.emplace_back(current_question, current_answers);
+    current_answers.clear();
+  }
+  fi.close();
+
+  return questions;
+}
+
 webserver::webserver()
     : server_(std::make_shared<seasocks::Server>(std::make_shared<MyLogger>(MyLogger::Level::Info))),
-      quiz_runner_(
-          std::make_shared<quiz_runner>(quiz("The Big C++ Quiz",
-                                             {
-                                                 question{"What is the answer to life, the universe, and everything?",
-                                                          {
-                                                              answer{"40", false},
-                                                              answer{"41", false},
-                                                              answer{"42", true},
-                                                              answer{"43", false},
-                                                          }},
-                                                 question{"What did you have for breakfast today?",
-                                                          {
-                                                              answer{"Bread and Milk", false},
-                                                              answer{"Croissant", false},
-                                                              answer{"Omelette du fromage", true},
-                                                              answer{"None of the above", true},
-                                                          }},
-                                             }))),
+      quiz_runner_(std::make_shared<quiz_runner>(quiz("The Big C++ Quiz", read_questions_from_file("quiz.txt")))),
       participant_handler_(std::make_shared<participant_handler>(server_, quiz_runner_)),
       quizmaster_handler_(std::make_shared<quizmaster_handler>(server_, quiz_runner_)) {
   auto root = std::make_shared<seasocks::RootPageHandler>();

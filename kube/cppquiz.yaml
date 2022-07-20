@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cppquiz
+  annotations:
+    scheduler.alpha.kubernetes.io/node-selector: server=deskmini
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cppquiz
+  namespace: cppquiz
+spec:
+  selector:
+    matchLabels:
+      app: cppquiz
+      tier: cppquiz
+  replicas: 1
+  revisionHistoryLimit: 2
+  template:
+    metadata:
+      labels:
+        app: cppquiz
+        tier: cppquiz
+    spec:
+      containers:
+      - name: cppquizcontainer
+        image: rayburgemeestre/cppquiz:v1
+        command: ["/cppquiz"]
+        workingDir: /data
+        volumeMounts:
+        - mountPath: /data
+          name: workdir-volume
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 18080
+          name: http
+      volumes:
+      - name: workdir-volume
+        hostPath:
+          path: /mnt2/NAS/kube/cppquiz
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cppquiz
+  namespace: cppquiz
+  labels:
+    app: cppquiz
+    tier: cppquiz
+spec:
+  type: NodePort
+  ports:
+  - port: 18080
+    name: http
+  selector:
+    app: cppquiz
+    tier: cppquiz
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/issuer: letsencrypt-prod
+    kubernetes.io/ingress.provider: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "900"
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+  name: cppquiz
+  namespace: cppquiz
+spec:
+  rules:
+  - host: cppquiz.cppse.nl
+    http:
+      paths:
+      - backend:
+          serviceName: cppquiz
+          servicePort: 18080
+        path: /
+  tls:
+  - hosts:
+    - cppquiz.cppse.nl
+    secretName: cppquiz-tls
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: cppquiz
+  namespace: cppquiz
+spec:
+  acme:
+    config:
+    - domains:
+      - cppquiz.cppse.nl
+      http01:
+        ingress: ""
+        ingressClass: nginx
+  commonName: ""
+  dnsNames:
+  - cppquiz.cppse.nl
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  secretName: cppquiz-tls

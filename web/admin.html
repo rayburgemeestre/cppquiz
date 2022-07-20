@@ -1,68 +1,128 @@
-<html lang="">
+<!DOCTYPE html>
+<html>
 <head>
+    <meta charset="utf-8">
     <script type="text/javascript" src="api.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://unpkg.com/vue@3"></script>
-    <script>
-    </script>
     <title>C++ Quiz</title>
 </head>
 <body>
 
 <div id="app">
-    Server state: {{ server_state }} <br/>
-    UUID: {{ uuid }} <br/>
-    Message: {{ message }} <br/>
-    <button v-if="!quiz_started" @click="start_quiz">Start quiz</button>
-    <button v-if="quiz_started" @click="stop_quiz">Stop quiz</button>
-
-    <div v-if="quiz_started">
-        The quiz has started! quiz_id = {{ quiz_id }}
-        <br/>
-        Current question ID: {{ current_question_id }}<br/>
-        Current question: {{ current_question }}<br/>
-        Num questions in set: {{ num_questions }}<br/>
-
-        <button v-if="question_state == 0" @click="next_question">Next question</button>
-        <button v-if="question_state >= 1 && question_state < 1000" @click="expand_question">Expand</button>
-        <button v-if="question_state == 1000" @click="start_question">START</button>
-
-    </div>
-
-
-    <div v-if="quiz_started">
-        <div v-if="current_question">
-            <h2>{{ current_question.question }}</h2>
-
-            <h2 v-if="countdown">Seconds remaining: {{ countdown }}</h2>
-
-            <div v-for="(answer, index) in current_question.answers">
-                <span><strong>{{ answer }}</strong> </span>
-                <span v-if="is_answer_correct(current_question.question_id, index)"> == CORRECT</span>
-                <br/>
-                <br/>
+    <section v-if="!quiz_started" class="section">
+        <div class="container">
+            <p class="block">
+            <figure class="image is-128x128" style="float: right;">
+                <img class="is-rounded" src="dutchcpp.png">
+            </figure>
+            </p>
+            <h1 class="title">
+                C++ Quiz
+            </h1>
+            <p class="subtitle">
+                Welcome to the <strong>Dutch C++ Meetup</strong>!
+            <div class="tags has-addons">
+                <span class="tag is-dark">server state</span>
+                <span class="tag is-info">{{ server_state }}</span>
             </div>
+            </p>
+            <p class="block">
+                <button class="button" @click="start_quiz">Start quiz</button>
+            </p>
+            <table class="table is-striped">
+                <thead>
+                <tr>
+                    <th>Participant</th>
+                    <th>UUID</th>
+                    <th>state</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="participant in participants">
+                    <td>{{ participant.nickname }}</td>
+                    <td><code class="is-small">{{ participant.unique_id }}</code></td>
+                    <td><code class="is-small">{{ participant.connected }}</code></td>
+                </tr>
+                </tbody>
+            </table>
         </div>
-    </div>
+    </section>
+    <section v-if="quiz_started" class="section">
+        <div class="container">
+            <p class="block">
+            <figure class="image is-128x128" style="float: right;">
+                <img class="is-rounded" src="dutchcpp.png">
+            </figure>
+            </p>
+            <h1 class="title">
+                C++ Quiz
+            </h1>
+            <p class="subtitle">
+                Welcome to the <strong>Dutch C++ Meetup</strong>!
+                <div class="tags has-addons">
+                    <span class="tag is-dark">server state</span>
+                    <span class="tag is-info">{{ server_state }}</span>
+                </div>
+            </p>
+            <p class="block">
+                <button class="button" v-if="question_state == 0" @click="next_question">Next question</button>
+                <button class="button" v-if="question_state >= 1 && question_state < 1000" @click="expand_question">Expand</button>
+                <button class="button" v-if="question_state == 1000" @click="start_question">START</button>
+            </p>
 
-    <h2>Leaderboard</h2>
-    <table>
-        <tr>
-            <th>Nickname</th>
-            <th>Score</th>
-        </tr>
-        <tr v-for="(participant, index) in leaderboard">
-            <td>{{ participant.nickname }}</td>
-            <td>{{ participant.score }}</td>
-        </tr>
-    </table>
+            <h2 class="subtitle">Next question:</h2>
+            <h1 v-if="current_question" class="title">{{ current_question.question }}</h1>
+            <h2 v-if="countdown" class="subtitle">Seconds remaining: {{ countdown }}</h2>
 
+            <div v-if="current_question">
+                <p v-for="(answer, index) in current_question.answers" class="block">
+                    <button v-if="is_answer_correct(current_question.question_id, index)" class="button is-medium is-primary is-fullwidth is-outlined" v-model="answer">{{ answer }}</button>
+                    <button v-if="!is_answer_correct(current_question.question_id, index)" class="button is-medium is-info is-fullwidth is-outlined" v-model="answer">{{ answer }}</button>
+                </p>
+            </div>
 
-    <h2>Participants</h2>
-    <ul>
-        <li v-for="participant in participants">
-            {{ participant.nickname }} ({{ participant.unique_id }}, {{ participant.connected }})
-        </li>
-    </ul>
+            <div class="block">
+                <table class="table is-striped">
+                    <thead>
+                    <tr>
+                        <th>Leaderboard</th>
+                        <th>score</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="(participant, index) in leaderboard">
+                        <td>{{ participant.nickname }}</td>
+                        <td>{{ participant.score }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="block">
+                <table class="table is-striped">
+                    <thead>
+                    <tr>
+                        <th>Participant</th>
+                        <th>UUID</th>
+                        <th>state</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="participant in participants">
+                        <td>{{ participant.nickname }}</td>
+                        <td><code class="is-small">{{ participant.unique_id }}</code></td>
+                        <td><code class="is-small">{{ participant.connected }}</code></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="block">
+                <button class="button" @click="stop_quiz">Stop quiz</button>
+            </p>
+        </div>
+    </section>
 </div>
 
 <script>

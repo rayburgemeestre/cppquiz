@@ -1,48 +1,80 @@
-<html lang="">
+<!DOCTYPE html>
+<html>
 <head>
+    <meta charset="utf-8">
     <script type="text/javascript" src="api.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://unpkg.com/vue@3"></script>
-    <script>
-    </script>
     <title>C++ Quiz</title>
 </head>
 <body>
 
 <div id="app">
-    Server state: {{ server_state }} <br/>
-    UUID: {{ uuid }} <br/>
-    Message: {{ message }} <br/>
-
-    <!-- debug -->
-    <button @click="clear_local_storage">Clear local storage</button>
-
-    Change your name here: <input type="text" v-model="nickname">
-
-    <div v-if="quiz_started">
-        The quiz has started! <br/>
-
-        Current question: {{ current_question }} <br/>
-        Your answers so far: {{ local_answers }} <br/>
-
-        <div v-if="current_question">
-            <h2>{{ current_question.question }}</h2>
-
-            Please click to select your answer of choice. <br/>
-            You can change your mind, until time is up. <br/>
-            <br/>
-
-            <h2 v-if="countdown">Seconds remaining: {{ countdown }}</h2>
+    <section v-if="!quiz_started" class="section">
+        <div class="container">
+            <p class="block">
+                <figure class="image is-128x128" style="float: right;">
+                    <img class="is-rounded" src="dutchcpp.png">
+                </figure>
+            </p>
+            <h1 class="title">
+                C++ Quiz
+            </h1>
+            <p class="subtitle">
+                Welcome to the <strong>Dutch C++ Meetup</strong>!
+                <div class="tags has-addons">
+                    <span class="tag is-dark">server state</span>
+                    <span class="tag is-info">{{ server_state }}</span>
+                </div>
+            </p>
+            <p class="block">
+                Please enter your (nick)name below.
+            </p>
+            <div class="block">
+                <div class="field">
+                    <div class="control">
+                        <input class="input" type="text" v-model="nickname" placeholder="Type your nickname">
+                    </div>
+                </div>
+            </div>
+            <p class="block">
+                The quiz has not started yet! Please wait...
+            </p>
+        </div>
+    </section>
+    <section v-if="quiz_started" class="section">
+        <div class="container">
+            <h1 class="title">
+                C++ Quiz
+            </h1>
+            <p class="subtitle">
+                <div class="tags has-addons">
+                    <span class="tag is-dark">server state</span>
+                    <span class="tag is-info">{{ server_state }}</span>
+                </div>
+            </p>
+            <div class="block">
+                Your nickname is: <strong>{{ nickname }}</strong>
+            </div>
+            <h2 class="subtitle">Next question:</h2>
+            <h1 v-if="current_question" class="title">{{ current_question.question }}</h1>
+            <h2 v-if="countdown" class="subtitle">Seconds remaining: {{ countdown }}</h2>
 
             <div v-for="(answer, index) in current_question.answers">
-                <button v-if="answering_time" v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
-                <span v-if="!answering_time"><strong>{{ answer }}</strong></span>
-                <span v-if="current_question.quiz_id in local_answers && current_question.question_id in local_answers[current_question.quiz_id] && local_answers[current_question.quiz_id][current_question.question_id] === index">You have chosen this option!</span>
-                <span v-if="is_answer_correct(current_question.question_id, index)"> == CORRECT</span>
-                <br/>
-                <br/>
+                <p class="block">
+                    <button v-if="answering_time && is_chosen_answer(current_question, index)" class="button is-medium is-info is-fullwidth            " v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                    <button v-if="answering_time && !is_chosen_answer(current_question, index)" class="button is-medium is-info is-fullwidth is-outlined" v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                </p>
+                <p class="block">
+                    <button v-if="!answering_time && is_chosen_answer(current_question, index) && !is_answer_correct(current_question.question_id, index)" disabled class="button is-medium is-danger is-fullwidth" v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                    <button v-if="!answering_time && !is_chosen_answer(current_question, index) && !is_answer_correct(current_question.question_id, index)" disabled class="button is-medium is-info is-fullwidth is-outlined" v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                    <button v-if="!answering_time && is_chosen_answer(current_question, index) && is_answer_correct(current_question.question_id, index)" disabled class="button is-medium is-primary is-fullwidth" v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                    <button v-if="!answering_time && !is_chosen_answer(current_question, index) && is_answer_correct(current_question.question_id, index)" disabled class="button is-medium is-primary is-fullwidth is-outlined" v-model="answer" @click="set_answer(current_question.quiz_id, current_question.question_id, index)">{{ answer }}</button>
+                </p>
             </div>
         </div>
-    </div>
+    </section>
 </div>
 
 <script>
@@ -108,6 +140,9 @@
                     }
                 } catch (e) {}
                 return false;
+            },
+            is_chosen_answer(current_question, index) {
+                return (current_question.quiz_id in this.$data.local_answers && current_question.question_id in this.$data.local_answers[current_question.quiz_id] && this.$data.local_answers[current_question.quiz_id][current_question.question_id] === index)
             }
         }
     }).mount('#app')
