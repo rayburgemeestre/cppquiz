@@ -56,11 +56,13 @@ void participant_handler::onData(seasocks::WebSocket *con, const char *data) {
                     .dump());
     } else if (client_msg["msg"] == "set_nickname") {
       quiz_runner_->set_participant_connected(client_msg["unique_id"], true);
-      quiz_runner_->add_participant(client_msg["unique_id"], client_msg["nickname"]);
+	  std::string nickname = client_msg["nickname"];
+	  nickname = nickname.substr(0, 24);
+      quiz_runner_->add_participant(client_msg["unique_id"], nickname);
       con_to_unique_id_.insert_or_assign(con, client_msg["unique_id"]);
       con->send(nlohmann::json{
           {"msg", "set_nickname"},
-          {"value", fmt::format("Nice to meet you {}!", client_msg["nickname"])},
+          {"value", fmt::format("Nice to meet you {}!", nickname)},
       }
                     .dump());
       quiz_runner_->send_participants_to_quizmaster();
