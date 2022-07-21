@@ -1,0 +1,77 @@
+Q: Where are we currently having the C++ Meetup?
+*A: Adyen
+*A: Adyen
+*A: Adyen
+*A: Adyen
+
+Q: What is NOT a C++ compiler?
+A: Clang
+A: GCC
+*A: PHP
+A: Turbo C++
+
+Q: Which resources are relevant to RAII?
+A: CPU time
+A: cores
+A: cache capacity
+*A: allocated heap memory
+
+Q: How do you empty a std::vector with three elements?
+A: vec.empty();
+*A: vec.clear();
+A: vec.erase();
+A: vec.shrink_to_fit();
+
+Q: What does CRTP stand for?
+A: Curiously Recurring Types Pattern
+*A: Curiously Recurring Template Pattern
+A: Can't Reproduce That Pattern
+A: Curiously Random Template Pattern
+
+Q: How does one write an empty lambda in C++ >= 11?
+*A:  [](){};
+A:  ()[]{};
+A:  {}()[];
+A:  All of the above
+
+Q: Which of these functions does NOT exist in the C++ standard?
+A: std::get_money
+*A: std::set_money
+A: std::put_money
+A: std::money_put
+
+Q: Which of the following statements is correct:
+*A: A) An std::variant is a type-safe union.
+A: B) An std::any is a type-safe union.
+A: C) An std::union is a type-safe union.
+A: D) None of the above are correct.
+
+Q: Which of the following statements is correct? The default access specifier for ....
+*A: .. a class is private.
+A: .. a struct is private.
+A: .. both a struct + class are public.
+A: .. both a struct + class are private.
+
+Q: Which is not valid C++ 20?
+A: []() mutable noexcept {};
+A: [&]<typename T>(T t){};
+A: [=](const auto &T){};
+*A: All are valid!
+
+Q: What is typically the purpose of destructors?
+A: A) These are used by the garbage collector to free memory periodically.
+A: B) These are called to generate exceptions when an object is destroyed.
+A: C) To destruct no longer used memory in order to construct a class with the "new" keyword.
+*A: D) Free up resources the object may have acquired during its lifetime.
+
+Q: What is the proper cast to 'cast away' (remove) constness or volatility?
+*A: const_cast
+A: static_cast
+A: reinterpret_cast
+A: dynamic_cast
+
+Q: Finally, What is NOT a new C++20 feature?
+A: std::string's starts_with
+A: std::string_view
+A: spaceship operator <=>
+*A: 3-way comparison operator >=<
